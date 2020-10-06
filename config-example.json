@@ -1,0 +1,8 @@
+{
+  "host": "",
+  "port": 5432,
+  "database": "",
+  "username": "",
+  "password": "",
+  "ssl": "disable"
+}
