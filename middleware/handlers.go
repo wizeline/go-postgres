@@ -12,8 +12,8 @@ import (
 
 	"github.com/gorilla/mux" // used to get the params from the route
 
-	"github.com/joho/godotenv" // package used to read the .env file
-	_ "github.com/lib/pq"      // postgres golang driver
+	// package used to read the .env file
+	_ "github.com/lib/pq" // postgres golang driver
 )
 
 // response format
@@ -22,17 +22,22 @@ type response struct {
 	Message string `json:"message,omitempty"`
 }
 
+type configuration struct {
+	User     string `json:"username"`
+	Password string `json:"password"`
+	Database string `json:"database"`
+	Host     string `json:"host"`
+	Port     int    `json:"port"`
+	SSL      string `json:"ssl"`
+}
+
 // create connection with postgres db
 func createConnection() *sql.DB {
 	// load .env file
-	err := godotenv.Load(".env")
+	config := loadConfig()
+	psqlInfo := fmt.Sprintf("host=%s port =%d user=%s password=%s dbname=%s sslmode=%s", config.Host, config.Port, config.User, config.Password, config.Database, config.SSL)
 
-	if err != nil {
-		log.Fatalf("Error loading .env file")
-	}
-
-	// Open the connection
-	db, err := sql.Open("postgres", os.Getenv("POSTGRES_URL"))
+	db, err := sql.Open("postgres", psqlInfo)
 
 	if err != nil {
 		panic(err)
@@ -48,6 +53,25 @@ func createConnection() *sql.DB {
 	fmt.Println("Successfully connected!")
 	// return the connection
 	return db
+}
+
+func loadConfig() configuration {
+	configPath := os.Getenv("GO_POSTGRES_CONFIG_PATH")
+	if configPath == "" {
+		log.Fatal("Missing GO_POSTGRES_CONFIG_PATH variable")
+	}
+
+	configFilePath := configPath + "/config.json"
+	configFile, err := os.Open(configFilePath)
+	defer configFile.Close()
+	if err != nil {
+		log.Fatalf("Error opening configuration file %v", err)
+	}
+
+	var serverConfiguration configuration
+	jsonParser := json.NewDecoder(configFile)
+	jsonParser.Decode(&serverConfiguration)
+	return serverConfiguration
 }
 
 // CreateUser create a user in the postgres db
