@@ -50,18 +50,14 @@ func createConnection() *sql.DB {
 		panic(err)
 	}
 
-	fmt.Println("Successfully connected!")
+	log.Println("Successfully connected!")
 	// return the connection
 	return db
 }
 
 func loadConfig() configuration {
-	configPath := os.Getenv("GO_POSTGRES_CONFIG_PATH")
-	if configPath == "" {
-		log.Fatal("Missing GO_POSTGRES_CONFIG_PATH variable")
-	}
-
-	configFilePath := configPath + "/config.json"
+	log.Println("Reading configuration file")
+	configFilePath := "./config.json"
 	configFile, err := os.Open(configFilePath)
 	defer configFile.Close()
 	if err != nil {
@@ -71,6 +67,7 @@ func loadConfig() configuration {
 	var serverConfiguration configuration
 	jsonParser := json.NewDecoder(configFile)
 	jsonParser.Decode(&serverConfiguration)
+	log.Println("Configuration file decoded")
 	return serverConfiguration
 }
 
@@ -118,6 +115,8 @@ func GetUser(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Fatalf("Unable to get user. %v", err)
 	}
+
+	log.Printf("Returing user with id %d", user.ID)
 
 	// send the response
 	json.NewEncoder(w).Encode(user)
@@ -230,7 +229,7 @@ func insertUser(user models.User) int64 {
 		log.Fatalf("Unable to execute the query. %v", err)
 	}
 
-	fmt.Printf("Inserted a single record %v", id)
+	log.Printf("Inserted a single record %v", id)
 
 	// return the inserted id
 	return id
@@ -258,7 +257,7 @@ func getUser(id int64) (models.User, error) {
 
 	switch err {
 	case sql.ErrNoRows:
-		fmt.Println("No rows were returned!")
+		log.Println("No rows were returned!")
 		return user, nil
 	case nil:
 		return user, nil
@@ -309,6 +308,7 @@ func getAllUsers() ([]models.User, error) {
 
 	}
 
+	log.Printf("Returning %d users", len(users))
 	// return empty user on error
 	return users, err
 }
@@ -339,7 +339,7 @@ func updateUser(id int64, user models.User) int64 {
 		log.Fatalf("Error while checking the affected rows. %v", err)
 	}
 
-	fmt.Printf("Total rows/record affected %v", rowsAffected)
+	log.Printf("User with id %d got updated", id)
 
 	return rowsAffected
 }
@@ -370,7 +370,7 @@ func deleteUser(id int64) int64 {
 		log.Fatalf("Error while checking the affected rows. %v", err)
 	}
 
-	fmt.Printf("Total rows/record affected %v", rowsAffected)
+	log.Printf("User with id %d got deleted", id)
 
 	return rowsAffected
 }
